@@ -14,18 +14,21 @@ const saveLocalForms = (formData: formData[]) => {
   localStorage.setItem("forms", JSON.stringify(formData));
 };
 
-const FormsList = (props: { newFormCB: (isNew: boolean) => void }) => {
-  const [localForms, _] = useState<formData[]>(() => getLocalForms());
+const FormsList = (props: { openFormCB: (formId: number) => void }) => {
+  const [localForms, setLocalForms] = useState<formData[]>(() =>
+    getLocalForms()
+  );
 
   const deleteForm = (id: number) => {
     const updatedForms = localForms.filter((form) => form.id !== id);
     saveLocalForms(updatedForms);
+    setLocalForms(updatedForms);
   };
 
   return (
     <div>
       <button
-        onClick={() => props.newFormCB(true)}
+        onClick={() => props.openFormCB(Number(Date.now()))}
         className="bg-blue-600 text-white rounded-lg p-2 m-2"
       >
         New Form
@@ -33,7 +36,13 @@ const FormsList = (props: { newFormCB: (isNew: boolean) => void }) => {
       {localForms.map((form) => (
         <div className="border px-2 py-3 flex justify-between" key={form.id}>
           <span>{form.title}</span>
-          <div>
+          <div className="flex gap-2">
+            <button
+              className="text-sm text-blue-500"
+              onClick={() => props.openFormCB(form.id)}
+            >
+              Open Form
+            </button>
             <button
               className="text-sm text-red-500"
               onClick={() => deleteForm(form.id)}

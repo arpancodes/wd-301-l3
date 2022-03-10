@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { formData, formField } from "./model";
+import { formData } from "./model";
 
 const formFields = [
   { id: 1, label: "First Name", type: "text", value: "" },
@@ -10,7 +10,6 @@ const formFields = [
 
 const getLocalForms: () => formData[] = () => {
   const localForms = localStorage.getItem("forms");
-  console.log("getLocalForms: ", JSON.parse(localForms as any));
   if (localForms) {
     return JSON.parse(localForms);
   } else {
@@ -18,15 +17,15 @@ const getLocalForms: () => formData[] = () => {
   }
 };
 
-const intialState: (isNew: boolean) => formData = (isNew) => {
+const intialState: (formId: number) => formData = (formId) => {
   const localForms = getLocalForms();
-  console.log("Initial State: ", localForms);
-  if (localForms.length > 0 && !isNew) {
-    return localForms[0];
+  const form = localForms.find((form) => form.id === formId);
+  if (form) {
+    return form;
   }
 
   const newForm = {
-    id: Number(new Date()),
+    id: formId,
     title: "Untitled Form",
     formFields: formFields,
   };
@@ -35,30 +34,25 @@ const intialState: (isNew: boolean) => formData = (isNew) => {
 };
 
 const saveLocalForms = (formData: formData[]) => {
-  console.log("saveLocalForms: ", formData);
   localStorage.setItem("forms", JSON.stringify(formData));
-  console.log("AFTER SAVING TO LOCALSTORAGE", getLocalForms());
 };
 
-const saveFormData = (formData: formData) => {
+const saveFormData = (formData: formData, formId: number) => {
   const localForms = getLocalForms();
-  console.log("saveFormData: ", formData);
-  console.log(localForms);
   const updatedForms = localForms.map((form) => {
-    return form.id === formData.id ? formData : form;
+    return form.id === formId ? formData : form;
   });
   saveLocalForms(updatedForms);
 };
 
 export default function Form(props: {
   closeFormCB: () => void;
-  setNewFormCB: (x: boolean) => void;
-  isNew: boolean;
+  formId: number;
 }) {
-  const initialState = intialState(props.isNew);
-  const [formState, setFormState] = React.useState<formData>(initialState);
+  const [formState, setFormState] = React.useState<formData>(() =>
+    intialState(props.formId)
+  );
   const [newField, setNewField] = React.useState({ title: "", type: "text" });
-
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,18 +61,16 @@ export default function Form(props: {
     titleRef.current?.focus();
     return () => {
       document.title = oldTitle;
-      props.setNewFormCB(false);
     };
-  }, [props]);
+  }, []);
 
   useEffect(() => {
     console.log("Form State: ", formState);
     const timeout = setTimeout(() => {
-      saveFormData(formState);
+      saveFormData(formState, props.formId);
     }, 1000);
-
     return () => clearTimeout(timeout);
-  }, [formState]);
+  }, [formState, props.formId]);
 
   const clearFormCB = () => {
     setFormState({
@@ -182,7 +174,7 @@ export default function Form(props: {
               formFields: [
                 ...formState.formFields,
                 {
-                  id: Number(new Date()),
+                  id: Number(Date.now()),
                   label: newField.title,
                   value: "",
                   type: newField.type,
@@ -198,7 +190,7 @@ export default function Form(props: {
       <button
         className="bg-blue-600 text-white rounded-lg p-2 m-2 w-full"
         onClick={() => {
-          saveFormData(formState);
+          saveFormData(formState, props.formId);
         }}
       >
         Save
